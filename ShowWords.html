@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>HANGMAN!!!</title>
+<link rel = "stylesheet" type = "text/css" href = "hang-style.css"/>
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+<script type="text/javascript">
+    $(document).ready(function(){
+        alert("Welcome to Hangman!!!");
+    });
+    var word;
+    var correct_guesses = 0;
+    var incorrect_guesses = 0;
+    var letters_guessed = 0;
+    var rounds = 0;
+    var duringround=false;
+    var wins = 0;
+    // Use the JQuery post function to make an AJAX request. 
+    // When the data is returned, parse it to get the word and then call
+    // processWord on that word
+    function requestWord() 
+    {
+        if(rounds!=0 && duringround==true)
+        {
+            var new_round=confirm("Would you like to start a new round?");
+            if(new_round==true)
+            {
+                duringround=true;
+                incorrect_guesses=0;
+                letters_guessed=0;
+                $("#numberWrong td").replaceWith("<td>" + incorrect_guesses + "</td>");
+                $("#numberGuessed td").replaceWith("<td>" + letters_guessed + "</td>");
+                //empty string since not passing anything
+                $.post("sendword.php", "",
+                function(data)
+                {
+                    //parsing data.  value is tag for word.  .text to get actual data
+                    word = $(data).find('value').text();
+                    alert(word);
+                    startGame();
+                    //processWord(word);
+                }
+                );
+            }
+        }
+        else
+        {
+            duringround=true;
+            duringround=true;
+            incorrect_guesses=0;
+            letters_guessed=0;
+            $("#numberWrong td").replaceWith("<td>" + incorrect_guesses + "</td>");
+            $("#numberGuessed td").replaceWith("<td>" + letters_guessed + "</td>");
+    	   //empty string since not passing anything
+    	   $.post("sendword.php", "",
+    		  function(data)
+    		  {
+    			//parsing data.  value is tag for word.  .text to get actual data
+    			word = $(data).find('value').text();
+                alert(word);
+    			startGame();
+    			//processWord(word);
+    		  }
+    	);
+        }
+    	
+    }
+
+    function startGame()
+    {
+        rounds++;
+        correct_guesses=0;
+        $("#wordTable").empty();
+        $("#letters").empty();
+        $("#div0").css("display","inline-block");
+        $("#div1").css("display","inline-block");
+        $("#div2").css("display", "inline-block");
+        for(var i=0;i<word.length;i++)
+        {
+            $("#wordTable").append("<td>_ </td>");
+        }
+    }
+
+    function input(letter)
+    {
+        findLetter(letter);
+    }
+
+    function findMatch(letter)
+    {
+        var found = false;
+        for(var i=0; i<word.length; i++)
+        {
+            if(letter.toLowerCase()==word.charAt(i))
+            {
+                found = true;
+                correct_guesses++;
+                updateTable(letter, i);
+            }
+        }
+        if(found==false)
+        {
+            alert("That letter is not in the word!");
+            incorrect_guesses++;
+            $("#numberWrong td").replaceWith("<td>" + incorrect_guesses + "</td>");
+            if(incorrect_guesses==7)
+            {
+                youLost();
+            }
+        }
+        else
+        {
+            alert("That letter is in the word!");
+            if(correct_guesses == word.length)
+            {
+                wins++;
+                youWon();
+            }
+        }
+    }
+
+    function updateTable(letter, index)
+    {
+        $('#wordTable td:eq('+index+')').replaceWith("<td>" + letter.toLowerCase() + "</td>");
+    }
+
+    function addToGuessed(letter)
+    {
+        $('#letters').append("<td>" + letter.toLowerCase() + "</td>");
+    }
+
+    function findLetter(letter)
+    {
+        var foundletter = false;
+        $('#letters td').each(function(index, value)
+        {
+            var currLetter = $(this).text();
+            if(letter.toLowerCase()==currLetter)
+            {
+                alert("Too bad, you already guess that letter");
+                foundletter=true;
+            }
+        });
+        if(foundletter==false)
+        {
+                letters_guessed++;
+                $("#numberGuessed td").replaceWith("<td>" + letters_guessed + "</td>");
+                addToGuessed(letter);
+                findMatch(letter);
+        }
+    }
+
+    function youWon()
+    {
+        duringround=false;
+        var win_percent = (wins/rounds)*100;
+        win_percent = parseFloat(win_percent).toFixed(2);
+        alert("Congratulations you successfully guessed the word!!!! \n \n Rounds Played: "+rounds+
+            "\n Rounds Won: " + wins + "\n Win Percentage: " + win_percent + "%"); 
+        alert("Press Start a New Game to begin again.");
+        $("#div0").css("display", "none");
+    }
+
+    function youLost()
+    {
+        duringround=false;
+        var win_percent = (wins/rounds)*100;
+        win_percent = parseFloat(win_percent).toFixed(2);
+        alert("Sorry, you lost. :( \n \n Rounds Played: "+rounds+
+            "\n Rounds Won: " + wins + "\n Win Percentage: " + win_percent + "%"); 
+        alert("Press Start a New Game to begin again.");
+        $("#div0").css("display", "none");
+    }
+
+    // Search for the word in the word list.  If found, increment its
+    // count and update the table.  If not found, add it to the list and
+    // append a new row to the table.
+/*    function processWord(word)
+    {
+    	var found = 0;
+    	for(var i=0;i<wordCount;i++)
+    	{
+    		if(word==theWords[i].word)
+    		{
+    			theWords[i].count++;
+    			updateWord(i);
+    			found = 1;
+    			break;
+    		}
+    	}
+    	if(found==0)
+    	{
+    		theWords[wordCount] = new Word(word);
+    		addWord(wordCount);
+    		wordCount++;
+    	}
+    }
+
+    // Make a new Word
+    function Word(word)
+    {
+        this.word = word;
+        this.count = 1;
+    }
+
+    // Update the count of the word in the table
+    function updateWord(index)
+    {
+    	//Look to table index corresponding to theWords index and update count
+    	//Select the table and the row equal to that index
+    	//td:eq(0) is word td.eq(1) is count
+    	$("#theTable tr:eq(" + index + ") td:eq(1)").replaceWith("<td>" + theWords[index].count + "</td>");
+    }
+
+    // Add a new word to the end of the table
+    function addWord(index)
+    {
+    	var newRow = "<tr><td>"+theWords[index].word+"</td><td>"+theWords[index].count+"</td></tr>";
+    	$("#theTable").append(newRow);
+    }*/
+</script>
+</head>
+<body> 
+<h1>HANGMAN</h1>
+<div style="display:inline-block" font="size:" id="div5">
+    <table style="display:inline-block" float:"left" id='numberGuessed'>
+        <caption>Number of Letter's Guessed</caption>
+        <tr><td>0</td></tr></table>
+    <table style="display:inline-block" float:"right" id='numberWrong'>
+        <caption>Number of Incorrect Guesses</caption><tr><td>0</td></tr></table>
+</div>
+<br/><br/><br/>
+<center>
+<div style="display:none" id="div1">
+    <table id="wordTable"></table>
+</div>
+</center>
+<br/>
+<h2>
+<input type = 'button' value = "Start a New Round" onclick = 'requestWord()'/>
+</h2>
+<center>
+<cpoint><div style="display:none" id="div0">
+    <span id="A" onClick='input("A")'>A  </span><span id="B" onClick='input("B")'>B  </span><span id="C" onClick='input("C")'>C  </span>
+    <span id="D" onClick='input("D")'>D  </span><span id="E" onClick='input("E")'>E  </span><span id="F" onClick='input("F")'>F  </span>
+    <span id="G" onClick='input("G")'>G  </span><span id="H" onClick='input("H")'>H  </span><span id="I" onClick='input("I")'>I  </span>
+    <span id="J" onClick='input("J")'>J  </span><span id="K" onClick='input("K")'>K  </span><span id="L" onClick='input("L")'>L  </span>
+    <span id="M" onClick='input("M")'>M  </span><br/><span id="N" onClick='input("N")'>N  </span><span id="O" onClick='input("O")'>O  </span>
+    <span id="P" onClick='input("P")'>P  </span><span id="Q" onClick='input("Q")'>Q  </span><span id="R" onClick='input("R")'>R  </span>
+    <span id="S" onClick='input("S")'>S  </span><span id="T" onClick='input("T")'>T  </span><span id="U" onClick='input("U")'>U  </span>
+    <span id="V" onClick='input("V")'>V  </span><span id="W" onClick='input("W")'>W  </span><span id="X" onClick='input("X")'>X  </span>
+    <span id="Y" onClick='input("Y")'>Y  </span><span id="Z" onClick='input("Z")'>Z  </span>
+</div>
+<br/><br/><br/>
+<div style="display:none" id="div2">
+    <h2>Guessed Letters</h2>
+    <table id='letters'></table>
+</div></cpoint></center>
+</body>
+</html>

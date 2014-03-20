@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>HANGMAN!!!</title>
+<link rel = "stylesheet" type = "text/css" href = "hang-style.css"/>
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+<script type="text/javascript">
+    $(document).ready(function(){
+        alert("Welcome to Hangman!!!"); //WELCOMES USER TO THE GAME
+    });
+    var word; //HOLDS WORD FROM SERVER
+    var correct_guesses = 0; //CORRECT GUESSES FOR CURRENT ROUND
+    var incorrect_guesses = 0; //INCORRECT GUESSES FOR CURRENT ROUND
+    var letters_guessed = 0; //TOTAL NUMBER OF LETTERS GUESSED FOR CURRENT ROUND
+    var rounds = 0; //NUMBER OF ROUNDS
+    var duringround=false; //USED TO TELL IF USER IS TRYING TO START A NEW ROUND DURING A ROUND
+    var wins = 0; //NUMBER OF WINS
+    // Use the JQuery post function to make an AJAX request. 
+    function requestWord() 
+    {
+        //IF USER IS IN THE MIDDLE OF A ROUND AND PRESSES START A NEW GAME
+        //HE OR SHE MUST CONFIRM BEFORE A NEW ROUND STARTS
+        if(rounds!=0 && duringround==true)
+        {
+            var new_round=confirm("Would you like to start a new round?");
+            if(new_round==true)
+            {
+                //$("#hang8").css("display","none");
+                //$("#hang1").css("display","inline");
+                duringround=true; //USER IS NOW IN A ROUND
+                incorrect_guesses=0; //REINITIALIZE INC. GUESSES
+                letters_guessed=0; //REINITIALIZE TOTAL GUESSES
+                $("#numberWrong td").replaceWith("<td>" + incorrect_guesses + "</td>"); //RESET TO 0
+                $("#numberGuessed td").replaceWith("<td>" + letters_guessed + "</td>"); //RESET TO 0
+                //empty string since not passing anything
+                $.post("sendword.php", "",
+                function(data)
+                {
+                    //parsing data.  value is tag for word.  .text to get actual data
+                    word = $(data).find('value').text();
+                    //alert(word);
+                    startGame();
+                }
+                );
+            }
+        }
+        else
+        {
+            duringround=true;//NOW WE ARE IN A ROUND
+            incorrect_guesses=0; //REINITIALIZE INC. GUESSES
+            letters_guessed=0; //REINITIALIZE TOTAL GUESSES
+            $("#numberWrong td").replaceWith("<td>" + incorrect_guesses + "</td>"); //RESET TO 0
+            $("#numberGuessed td").replaceWith("<td>" + letters_guessed + "</td>"); //RESET TO 0
+    	   //empty string since not passing anything
+    	   $.post("sendword.php", "",
+    		  function(data)
+    		  {
+    			//parsing data.  value is tag for word.  .text to get actual data
+    			word = $(data).find('value').text();
+                //alert(word);
+    			startGame();
+    		  }
+    	);
+        }
+    	
+    }
+//FUNCTION TO BEGIN GAME
+//INCREMEND ROUNDS, RESET GUESSES AND TABLES
+    function startGame()
+    {
+        rounds++; //INCREMENT NUMBER OF ROUNDS
+        correct_guesses=0; //INITIALIZE CORRECT GUESSES
+        $("#wordTable").empty(); //EMPTY WORD TABLE FOR NEW ROUND
+        $("#letters").empty(); //EMPTY GUESSED LETTERS TABLE FOR NEW ROUND
+        $("#div0").css("display","inline-block");
+        $("#div1").css("display","inline-block");
+        $("#div2").css("display", "inline-block");
+        //ADD AN UNDERSCORE FOR EACH LETTER IN WORD
+        for(var i=0;i<word.length;i++)
+        {
+            $("#wordTable").append("<td>_ </td>");
+        }
+    }
+
+    function input(letter)
+    {
+        findLetter(letter);
+    }
+
+//THIS FUNCTION SEARCHES THROUGH EACH CHARACTER OF THE WORD
+//IN AN ATTEMPT TO FIND A MATCHED LETTER.  ONCE A LETTER IS MATCHED
+//ITS CORRESPONDING UNDERSCORE IS REPLACED IN THE WORD TABLE
+//CORRECT OR INCORRECT GUESSES IN INCREMENTED AND THE USER IS ALERTED
+//AS TO WHETHER THAT LETTER WAS IN THE WORD OR NOT
+    function findMatch(letter)
+    {
+        var found = false;
+        for(var i=0; i<word.length; i++)
+        {
+            if(letter.toLowerCase()==word.charAt(i))
+            {
+                $("#div6").css("display","none");
+                found = true;
+                correct_guesses++;
+                updateTable(letter, i);
+            }
+        }
+        if(found==false)
+        {
+            //alert("That letter is not in the word!");
+            $("#div6").css("display","inline");
+            incorrect_guesses++;
+                /*if(letter_guessed==1)
+                {
+                    $("#hang1").css("display","none");
+                    $("#hang2").css("display","inline");
+                }
+                if(letter_guessed==2)
+                {
+                    $("#hang2").css("display","none");
+                    $("#hang3").css("display","inline");
+                }
+                if(letter_guessed==3)
+                {
+                    $("#hang3").css("display","none");
+                    $("#hang4").css("display","inline");
+                }
+                                
+                if(letter_guessed==4)
+                {
+                    $("#hang4").css("display","none");
+                    $("#hang5").css("display","inline");
+                }
+                if(letter_guessed==5)
+                {
+                    $("#hang5").css("display","none");
+                    $("#hang6").css("display","inline");
+                }
+                if(letter_guessed==6)
+                {
+                    $("#hang6").css("display","none");
+                    $("#hang7").css("display","inline");
+                }*/
+
+
+            //UPDATE DISPLAY OF NUMBER OF WRONG GUESSES
+            $("#numberWrong td").replaceWith("<td>" + incorrect_guesses + "</td>");
+            if(incorrect_guesses==7)
+            {
+                //$("#hang7").css("display","none");
+                //$("#hang8").css("display","inline-block");
+                //USER LOST
+                youLost();
+            }
+        }
+        else
+        {
+            //alert("That letter is in the word!");
+            if(correct_guesses == word.length)
+            {
+                //USER WON
+                wins++;
+                youWon();
+            }
+        }
+    }
+
+//THIS FUNCTION REPLACES THE UNDERSCORE AT A GIVEN INDEX WITH A CORRECTLY GUESSED LETTER
+    function updateTable(letter, index)
+    {
+        $('#wordTable td:eq('+index+')').replaceWith("<td>" + letter.toLowerCase() + "</td>");
+    }
+
+//THIS FUNCTION ADDS THE GUESSED LETTER TO A TABLE OF GUESSED LETTERS
+    function addToGuessed(letter)
+    {
+        $('#letters').append("<td>" + letter.toLowerCase() + "</td>");
+    }
+
+//SEARCHES FOR LETTER IN THE TABLE OF GUESSED LETTERS
+//IF THE LETTER HAS ALREADY BEEN GUESSED, THE USER IS NOTIFIED
+//AND MUST GUESS ANOTHER LETTER.  IF THE LETTER IS NOT FOUND
+//THEN THE LETTER IS ADDED TO THE TABLE
+    function findLetter(letter)
+    {
+        var foundletter = false;
+        $('#letters td').each(function(index, value)
+        {
+            var currLetter = $(this).text();
+            if(letter.toLowerCase()==currLetter)
+            {
+                alert("Too bad, you already guess that letter");
+                foundletter=true;
+            }
+        });
+        if(foundletter==false)
+        {
+                letters_guessed++;
+                $("#numberGuessed td").replaceWith("<td>" + letters_guessed + "</td>");
+                addToGuessed(letter);
+                findMatch(letter);
+        }
+    }
+
+//USER WON THIS ROUND.  CALCULATES WIN PERCENTAGE AND SHOWS STATISTICS
+//AS AN ALERT TO THE USER
+    function youWon()
+    {
+        duringround=false;
+        var win_percent = (wins/rounds)*100;
+        win_percent = parseFloat(win_percent).toFixed(2);
+        alert("Congratulations you successfully guessed the word!!!! \n \n Rounds Played: "+rounds+
+            "\n Rounds Won: " + wins + "\n Win Percentage: " + win_percent + "%"); 
+        //alert("Press Start a New Game to begin again.");
+        $("#div0").css("display", "none");
+    }
+
+//USER LOST THIS ROUND.  CALCULATES WIN PERCENTAGE AND SHOWS STATISTICS
+//AS AN ALERT TO THE USER
+    function youLost()
+    {
+        duringround=false;
+        var win_percent = (wins/rounds)*100;
+        win_percent = parseFloat(win_percent).toFixed(2);
+        alert("Sorry, you lost. :( The correct word was "+word+". \n \n Rounds Played: "+rounds+
+            "\n Rounds Won: " + wins + "\n Win Percentage: " + win_percent + "%"); 
+        //alert("Press Start a New Game to begin again.");
+        $("#div0").css("display", "none");
+    }
+</script>
+</head>
+<body> 
+<h1>HANGMAN</h1>
+<center>
+    <!--
+<img src="hang1.jpg" id="hang1" width="125" height="150">
+<img src="hang2.jpg" id="hang2" style="display:none" width="125" height="150">
+<img src="hang3.jpg" id="hang3" style="display:none" width="125" height="150">
+<img src="hang4.jpg" id="hang4" style="display:none" width="125" height="150">
+<img src="hang5.jpg" id="hang5" style="display:none" width="125" height="150">
+<img src="hang6.jpg" id="hang6" style="display:none" width="125" height="150">
+<img src="hang7.jpg" id="hang7" style="display:none" width="125" height="150">
+<img src="hang8.jpg" id="hang8" style="display:none" width="125" height="150">
+<img src="hang9.jpg" id="hang9" style="display:none" width="125" height="150">-->
+<div style="display:inline-block" font="size:" id="div5">
+    <table style="display:inline-block" float:"left" id='numberGuessed'>
+        <caption>Number of Letters Guessed</caption>
+        <tr><td>0</td></tr></table>
+    <table style="display:inline-block" float:"right" id='numberWrong'>
+        <caption>Number of Incorrect Guesses</caption><tr><td>0</td></tr></table>
+</div>
+<br/>
+<div style="display:none" font="size:" id="div6">
+    <wrong>Incorrect</wrong>
+</div>
+</center>
+<br/><br/>
+<center>
+<div style="display:none" id="div1">
+    <table id="wordTable"></table>
+</div>
+</center>
+<br/>
+<h2>
+<input type = 'button' value = "Start a New Round" onclick = 'requestWord()'/>
+</h2>
+<center>
+<cpoint><div style="display:none" id="div0">
+    <span id="A" onClick='input("A")'>A  </span><span id="B" onClick='input("B")'>B  </span><span id="C" onClick='input("C")'>C  </span>
+    <span id="D" onClick='input("D")'>D  </span><span id="E" onClick='input("E")'>E  </span><span id="F" onClick='input("F")'>F  </span>
+    <span id="G" onClick='input("G")'>G  </span><span id="H" onClick='input("H")'>H  </span><span id="I" onClick='input("I")'>I  </span>
+    <span id="J" onClick='input("J")'>J  </span><span id="K" onClick='input("K")'>K  </span><span id="L" onClick='input("L")'>L  </span>
+    <span id="M" onClick='input("M")'>M  </span><br/><span id="N" onClick='input("N")'>N  </span><span id="O" onClick='input("O")'>O  </span>
+    <span id="P" onClick='input("P")'>P  </span><span id="Q" onClick='input("Q")'>Q  </span><span id="R" onClick='input("R")'>R  </span>
+    <span id="S" onClick='input("S")'>S  </span><span id="T" onClick='input("T")'>T  </span><span id="U" onClick='input("U")'>U  </span>
+    <span id="V" onClick='input("V")'>V  </span><span id="W" onClick='input("W")'>W  </span><span id="X" onClick='input("X")'>X  </span>
+    <span id="Y" onClick='input("Y")'>Y  </span><span id="Z" onClick='input("Z")'>Z  </span>
+</div>
+<br/><br/><br/>
+<div style="display:none" id="div2">
+    <h2>Guessed Letters</h2>
+    <table id='letters'></table>
+</div></cpoint></center>
+</body>
+</html>
